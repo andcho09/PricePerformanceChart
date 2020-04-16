@@ -1,0 +1,208 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Creates Price Performance Chart Lambda function
+
+Parameters:
+  CloudFrontCertificateArn:
+    Type: String
+    Description: ARN of ACM certificate to deploy into CloudFront. Has to be from us-east-1 because CloudFront is naff.
+    Default: arn:aws:acm:us-east-1:214602658230:certificate/f0a5f0cf-a2b8-4184-a258-a44018a2a4d0
+  DebugEnabled:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Description: Whether to enable Log4j (writes to CloudWatch) debug logging
+    Default: false
+  S3Region:
+    Type: String
+    Description: Region where the S3 bucket to store results is in
+    Default: ap-southeast-2
+  S3KeyPrefix:
+    Type: String
+    Description: Path prefix on where to save files in the S3 bucket (without trailing slash)
+    Default: data
+  UploadDomEnabled:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Description: Whether to gzip and upload raw HTML DOM from PriceSpy and UserBenchmark to S3 /tmp
+    Default: false
+
+Resources:
+  # S3 bucket
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Sub my-web-s3-bucket-${AWS::Region}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Project
+          Value: PricePerformanceChart
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}'
+            Resource: !Sub 'arn:aws:s3:::${S3Bucket}/*'
+  # IAM Role
+  LambdaIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Description: Role for Price Performance Chart Lambda function to use
+      Policies:
+        - PolicyName: PricePerformanceChartPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:*'
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${LambdaLogGroup}:*'
+              - Effect: Allow
+                Action:
+                  - 'autoscaling:Describe*'
+                  - 'cloudwatch:*'
+                  - 'sns:*'
+                  - 'iam:GetPolicy'
+                  - 'iam:GetPolicyVersion'
+                  - 'iam:GetRole'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                Resource:
+                  - !Sub 'arn:aws:s3:::${S3Bucket}/data/*'
+                  - !Sub 'arn:aws:s3:::${S3Bucket}/tmp/*'
+              - Effect: Allow
+                Action:
+                  - 's3:ListBucket'
+                Resource:
+                  - !Sub 'arn:aws:s3:::${S3Bucket}'
+      RoleName: PricePerformanceChartRole
+      Tags:
+        - Key: Project
+          Value: PricePerformanceChart
+  # Lambda function
+  LambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/lambda_scraper.zip # Relative to location of this CloudFormation template
+      Handler: lambda.handler
+      Runtime: python3.8
+      # Optional properties
+      Description: Lambda function for scraping web sites
+      Environment:
+        Variables:
+          DEBUG_ENABLED: !Ref DebugEnabled
+          S3_BUCKET: !Ref S3Bucket
+          S3_KEY_PREFIX: !Ref S3KeyPrefix
+          S3_REGION: !Ref S3Region
+          UPLOAD_DOM: !Ref UploadDomEnabled
+      FunctionName: PricePerformanceChartScraper
+      Layers:
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:selenium_chromium:4
+      MemorySize: 3008 # Max memory :D
+      Role: !GetAtt LambdaIamRole.Arn
+      Tags:
+        Project: PricePerformanceChart
+      Timeout: 120
+  # CloudWatch log group
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/PricePerformanceChartScraper
+      RetentionInDays: 14
+  # CloudFront
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    DeletionPolicy: Retain
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment:
+          Fn::Sub: # Use long format here to avoid linting issues
+          - access-identity-${Domain}
+          - Domain:
+              Fn::GetAtt:
+              - S3Bucket
+              - DomainName
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    DeletionPolicy: Retain
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Aliases:
+          - price.andrewcho.xyz
+        Comment: Price Performance Chart
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: false
+          TargetOriginId: S3-PricePerformanceChart
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          DefaultTTL: 2592000 # 30 days
+          MaxTTL: 31536000 # 365 days
+          MinTTL: 3600 # 1 hour
+        DefaultRootObject: chart.htm
+        HttpVersion: http2
+        Origins:
+          - DomainName: !GetAtt S3Bucket.DomainName
+            Id: S3-PricePerformanceChart
+            OriginPath: !Sub '/${S3KeyPrefix}'
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+        PriceClass: PriceClass_All
+        Restrictions:
+          GeoRestriction:
+            RestrictionType: blacklist
+            Locations:
+              - CN
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CloudFrontCertificateArn
+          MinimumProtocolVersion: TLSv1.2_2018
+          SslSupportMethod: sni-only
+      Tags:
+        - Key: Project
+          Value: PricePerformanceChart
+  # Trigger Event Rule
+  EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Trigger PricePerformanceChart scrape
+      Name: TriggerPricePerformanceChartScrape
+      ScheduleExpression: cron(47 0 ? * TUE *) # Every Tuesday at 00:47 UTC (13:47 NZDT)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt LambdaFunction.Arn
+          Id: PricePerformanceChartLambda
+          Input: !Sub |
+            {"scrape": "do it" }
+  EventRuleLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt EventRule.Arn

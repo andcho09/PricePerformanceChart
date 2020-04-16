@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Price Performance Chart</title>
+		<meta charset='utf-8'/>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+		<script src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js'></script>
+		<script src="latest_cpu.js"></script>
+		<script src="latest_hdd.js"></script>
+		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
+		<style>
+			canvas{
+				-moz-user-select: none;
+				-webkit-user-select: none;
+				-ms-user-select: none;
+			}
+			body{
+				font-family: "Helvetica";
+				font-size: 10pt;
+			}
+			.hidden{
+				display: none
+			}
+		</style>
+	</head>
+	<body>
+		<h2 class='cpu'>CPUs by <a href='https://cpu.userbenchmark.com/'>UserBenchmark</a> and <a href='https://pricespy.co.nz/category.php?k=s331848943&catId=500'>PriceSpy</a> price</h2>
+		<h2 class='hdd hidden'>HDDs by <a href='https://hdd.userbenchmark.com/'>UserBenchmark</a> and <a href='https://pricespy.co.nz/category.php?k=s332338236&catId=358'>PriceSpy</a> price</h2>
+		<span>Viewing:
+			<select id='typeSelect'>
+				<option value='cpu' selected=true>CPU</option>
+				<option value='hdd'>HDD</option>
+			</select>
+		</span>
+		<span class='cpu'>Sort by:
+			<select id='sortSelect-cpu'>
+				<option value='price' selected=true>Price</option>
+				<option value='avg'>Average performance per $</option>
+				<option value='1-core'>1-core performance per $</option>
+				<option value='8-core'>8-core performance per $</option>
+			</select>
+		</span>
+		<span class='hdd hidden'>Sort by:
+			<select id='sortSelect-hdd'>
+				<option value='price' selected=true>Price</option>
+				<option value='avg'>Average performance per $</option>
+				<option value='capacity'>$ per TB</option>
+			</select>
+		</span>
+		<span id='dateGenerated'>Placeholder</span>
+		<table id='productTable' class='display' width='100%'></table>
+		<script>
+			var productTable;
+			var dateOfData = LATEST_CPU_DATA_FILE.substring(22, 30);
+			var config = {
+				cpu: {
+					table: {
+						'ajax': {
+							'url': LATEST_CPU_DATA_FILE,
+							'dataSrc': ''
+						},
+						'columns': [
+							{data: 'name', title: 'Product'},
+							{data: 'price', title: 'Price', className: 'dt-body-right'},
+							{data: 'avg', title: 'Avg. Perf.', className: 'dt-body-right', render: $.fn.dataTable.render.number( ',', '.', 1)},
+							{data: 'avg/$', title: 'Avg Perf per $', className: 'dt-body-right', render: $.fn.dataTable.render.number( ',', '.', 3), 'visible': false},
+							{data: '1-core', title: '1-Core Perf.', className: 'dt-body-right'},
+							{data: '1-core/$', title: '1-Core Perf per $', className: 'dt-body-right', render: $.fn.dataTable.render.number( ',', '.', 3), 'visible': false},
+							{data: '8-core', title: '8-Core perf.', className: 'dt-body-right'},
+							{data: '8-core/$', title: '8-Core Perf per $', className: 'dt-body-right', render: $.fn.dataTable.render.number( ',', '.', 3), 'visible': false},
+						],
+						'paging': false,
+						'searching': false
+					}
+				},
+				hdd: {
+					table: {
+						'ajax': {
+							'url': LATEST_HDD_DATA_FILE,
+							'dataSrc': ''
+						},
+						'columns': [
+							{data: 'name', title: 'Product'},
+							{data: 'price', title: 'Price', className: 'dt-body-right'},
+							{data: 'avg', title: 'Avg. Perf.', className: 'dt-body-right', render: $.fn.dataTable.render.number( ',', '.', 1)},
+							{data: 'avg/$', title: 'Avg Perf per $', className: 'dt-body-right', render: $.fn.dataTable.render.number( ',', '.', 3), 'visible': false},
+							{data: 'capacity', title: 'Capacity (TB)', className: 'dt-body-right'},
+							{data: '$/capacity', title: '$ per Capacity (TB)', className: 'dt-body-right', render: $.fn.dataTable.render.number( ',', '.', 0), 'visible': false}
+						],
+						'paging': false,
+						'searching': false
+					}
+				}
+			};
+			$(document).ready(function(){
+				$('#dateGenerated').text('Date generated: ' + dateOfData.substring(0, 4) + '-' + dateOfData.substring(4, 6) + '-' + dateOfData.substring(6, 8));
+				productTable = $('#productTable').DataTable(config.cpu.table);
+				productTable.order([1, 'desc']).draw();
+			});
+			$('#sortSelect-cpu').change(handleSortSelect);
+			$('#sortSelect-hdd').change(handleSortSelect);
+			function handleSortSelect(e){
+				if ('sortSelect-cpu' == e.target.id){
+					var type = 'cpu';
+					var index_mapping = ['avg', '1-core', '8-core'];
+					var indexes = [3, 5, 7];
+				}else{
+					var type = 'hdd';
+					var index_mapping = ['avg', 'capacity'];
+					var indexes = [3, 5]
+				}
+
+				var selection = $('#sortSelect-' + type + ' option:selected')[0].value;
+				for (let i = 0; i < index_mapping.length; i++){
+					if (selection == index_mapping[i]){
+						productTable.column(indexes[i]).visible(true, false);
+						productTable.order([indexes[i], 'desc']);
+					}else{
+						productTable.column(indexes[i]).visible(false, false);
+					}
+				}
+				productTable.columns.adjust().draw();
+			}
+			$('#typeSelect').change(function(){
+				var newType = $('#typeSelect option:selected')[0].value;
+				if (newType === 'hdd'){
+					oldType = 'cpu';
+					newTable = config.hdd.table;
+				}else{
+					oldType = 'hdd';
+					newTable = config.cpu.table;
+				}
+				productTable.destroy();
+				$('#productTable').empty();
+				$('.' + oldType).addClass('hidden');
+				$('.' + newType).removeClass('hidden');
+				$('#sortSelect-' + newType).val('price');
+				productTable = $('#productTable').DataTable(newTable);
+			});
+		</script>
+	</body>
+</html>

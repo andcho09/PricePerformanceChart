@@ -1,0 +1,103 @@
+<project name="layer" default="build">
+
+	<target name="build">
+		<mkdir dir="build" />
+		<delete failonerror="false" file="build/lambda_scraper.zip" />
+		<zip destfile="build/lambda_scraper.zip">
+			<zipfileset dir="${basedir}">
+				<include name="price/**" />
+				<include name="lambda.py" />
+			</zipfileset>
+			<zipfileset dir="${basedir}/.venv/Lib/site-packages">
+				<!-- These are already included by AWS. Could include to lock down versions-->
+				<!--<include name="boto3/**" />
+				<include name="botocore/**" />-->
+				<include name="bs4/**" />
+				<include name="certifi/**" />
+				<include name="chardet/**" />
+				<include name="idna/**" />
+				<include name="requests/**" />
+				<include name="selenium/**" />
+				<include name="soupsieve/**" />
+			</zipfileset>
+		</zip>
+	</target>
+
+	<target name="layer">
+		<mkdir dir="build" />
+		<delete failonerror="false" file="build/selenium_chromium_layer.zip" />
+		<zip destfile="build/selenium_chromium_layer.zip">
+			<zipfileset dir="${basedir}/lambda_layer" filemode="755">
+				<include name="aws/**" />
+				<include name="chromedriver/**" />
+				<include name="chromium/**" />
+			</zipfileset>
+		</zip>
+	</target>
+
+	<target name="layer.publish">
+		<input message="Which AWS Region to deploy to?" validargs="ap-southeast-2,us-east-1" defaultvalue="ap-southeast-2" addproperty="region" />
+		<condition property="bucket" value="my-cloudformation-bucket-ap-southeast-2">
+			<equals arg1="ap-southeast-2" arg2="${region}" />
+		</condition>
+		<echo>==> aws s3 cp</echo>
+		<exec executable="aws">
+			<arg line="s3 cp build/selenium_chromium_layer.zip s3://${bucket}/priceperformancechart/layer/" />
+		</exec>
+		<echo/>
+		<echo>==> "aws lambda publish-layer-version</echo>
+		<exec executable="aws">
+			<arg line="lambda publish-layer-version --layer-name selenium_chromium --description &quot;Headless Chromium for Selenium&quot; --content S3Bucket=${bucket},S3Key=priceperformancechart/layer/selenium_chromium_layer.zip --region ${region}" />
+		</exec>
+	</target>
+
+	<target name="deploy" description="Deploys Lambda code to AWS">
+		<input message="Which AWS Region to deploy to?" validargs="ap-southeast-2,us-east-1" defaultvalue="ap-southeast-2" addproperty="region" />
+		<input message="Should debug be enabled in the Lambda function?" validargs="true,false" defaultvalue="false" addproperty="debug" />
+		<condition property="bucket" value="my-cloudformation-bucket-ap-southeast-2">
+			<equals arg1="ap-southeast-2" arg2="${region}" />
+		</condition>
+		<condition property="bucket" value="my-cloudformation-bucket-us-east1">
+			<equals arg1="us-east-1" arg2="${region}" />
+		</condition>
+		<echo>Deploying to region '${region}' using bucket '${bucket}' and debug '${debug}'...</echo>
+		<tstamp>
+			<format property="date" pattern="yyyy-MM-dd" />
+		</tstamp>
+		<tstamp>
+			<format property="datetime" pattern="yyyy-MM-dd-HHmm" />
+		</tstamp>
+
+		<echo/>
+		<echo>==> aws cloudformation package</echo>
+		<exec executable="aws" failonerror="true">
+			<arg line="cloudformation package --template-file template.yaml --output-template-file build/packaged-ppc-scraper-template.yaml --s3-prefix priceperformancechart/scraper-releases/${date} --s3-bucket ${bucket} --region ${region}" />
+		</exec>
+		<echo/>
+		<echo>==> aws s3 cp</echo>
+		<exec executable="aws" failonerror="true">
+			<arg line="s3 cp build/packaged-ppc-scraper-template.yaml s3://${bucket}/priceperformancechart/templates/" />
+		</exec>
+		<echo/>
+		<echo>==> aws cloudformation create-change-set</echo>
+		<exec executable="aws" failonerror="true">
+			<arg line="cloudformation create-change-set --stack-name PricePerformanceChartStack --change-set-name Change-${datetime} --tags Key=Project,Value=PricePerformanceChart --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --template-url https://${bucket}.s3-${region}.amazonaws.com/priceperformancechart/templates/packaged-ppc-scraper-template.yaml --parameters ParameterKey=DebugEnabled,ParameterValue=${debug} ParameterKey=UploadDomEnabled,ParameterValue=${debug} --region ${region}" />
+		</exec>
+		<echo>Change set created! You still need to execute it from the console or the CLI, e.g.</echo>
+		<echo> aws cloudformation execute-change-set --stack-name PricePerformanceChartStack --change-set-name Change-${datetime} --region ${region}</echo>
+		<echo/>
+		<echo>Links to stuff:</echo>
+		<echo> Lambda: https://${region}.console.aws.amazon.com/lambda/home?region=${region}#/functions/PricePerformanceChartScraper</echo>
+		<echo> CloudFormation: https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/</echo>
+	</target>
+
+	<target name="web" description="Uploads static web content to S3">
+		<property name="bucket" value="andrewcho-priceperformancechart-ap-southeast-2" />
+		<exec executable="aws" failonerror="true">
+			<arg line="s3 cp web/favicon.ico s3://${bucket}/priceperformancechart/data/ --cache-control max-age=31536000 --content-encoding gzip" />
+		</exec>
+		<exec executable="aws" failonerror="true">
+			<arg line="s3 cp web s3://${bucket}/data/ --cache-control max-age=2592000 --recursive --exclude * --include chart.htm --include robots.txt" />
+		</exec>
+	</target>
+</project>

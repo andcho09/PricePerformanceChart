@@ -1,0 +1,1 @@
+var LATEST_CPU_DATA_FILE="price_performance_cpu_20200315.json";

@@ -1,0 +1,11 @@
+__pycache__
+.ropeproject
+.venv
+.vscode/settings.json
+build
+chromedriver.log
+geckodriver.log
+lambda_layer
+log_*.txt
+test/test_webdatasource_test_*
+test/wip_*
