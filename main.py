@@ -30,7 +30,6 @@ if __name__ == '__main__': # this hack prevents this code from being run during 
 	for product_type in ['cpu', 'hdd']:
 		msg = 'Operate on ' + product_type.upper() + ' information'
 		subparser = subparsers.add_parser(product_type, description=msg, help=msg, formatter_class=argparse.RawTextHelpFormatter, epilog=epilog)
-		_add_browser_opts(subparser) # Add options here so they can be positioned after the product 'type' subcommand
 		subparser.add_argument('action', choices=['d', 'm', 'u'], help='Action to take', nargs ='?')
 	args = parser.parse_args()
 	if not hasattr(args, 'action'):
