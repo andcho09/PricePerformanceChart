@@ -98,6 +98,20 @@ class UserBenchmark(price.webdatasource.WebDataSource):
 		# Wait until progress bar gone
 		WebDriverWait(driver, 5).until_not(lambda x: x.find_element_by_css_selector('div[class="ajaxProgress"]').is_displayed())
 
+		if len(driver.find_elements_by_css_selector('th.mh-td-col[data-mhth="MCCPU_1CA"]')) == 0:
+			# Add 1-core pts if not there
+			add_column_links = driver.find_elements_by_css_selector('th.mh-td-th-arrow[title="Add columns"] a.nodec')
+			add_column_links[-1].click() # Click the last one, that should be the link to open the options panel (instead of the hidden one)
+			column_dialog = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.list-group')))
+			options = column_dialog.find_elements_by_tag_name('a')
+			for option in options:
+				if option.text.find('1-Core') >= 0:
+					option.click()
+					time.sleep(1.5) # This is gross but it's possible on Lambda for the progress bar to not have even shown up yet if this is too low
+					# Wait until progress bar gone
+					WebDriverWait(driver, 5).until_not(lambda x: x.find_element_by_css_selector('div[class="ajaxProgress"]').is_displayed())
+					break
+
 	def _post_download(self, driver):
 		for i in range(1, self.num_pages):
 			next = driver.find_element_by_xpath('//ul[@class="pagination pagination-lg"]/li[2]/a') # Next page
@@ -184,7 +198,7 @@ class UserBenchmarkHdd(price.webdatasource.WebDataSource):
 					raise Exception('Something is wrong with the CSV file. Expected "{}" but got "{}"'.format(self.EXPECTED_HEADER, header))
 				continue
 			avg_benchmark = float(row[5].strip())
-			if avg_benchmark < 42: 
+			if avg_benchmark < 42:
 				continue # Skip over bottom 50% of performers, these are usually 5400 rpm drives which I don't care about
 			samples = int(row[6].strip())
 			if int(row[6]) < 12:
@@ -196,8 +210,8 @@ class UserBenchmarkHdd(price.webdatasource.WebDataSource):
 
 if __name__ == '__main__':
 	price.helper.init_environ()
-	#ub = UserBenchmark(price.webdriver.FirefoxWebDriver('Selenium'))
-	ub = UserBenchmarkHdd()
+	ub = UserBenchmark(price.webdriver.FirefoxWebDriver('Selenium'))
+	#ub = UserBenchmarkHdd()
 	ub.download('test/wip_userbenchmark', 2)
 	#data = ub.parse('test/userbenchmark_cpu_fastest_avg_20200123.htm', 'test/userbenchmark_cpu_fastest_avg_20200123_2.htm')
 	data = ub.parse_prefixes('test/wip_userbenchmark')
