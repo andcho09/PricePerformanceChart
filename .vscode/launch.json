@@ -10,19 +10,15 @@
 			"type": "python",
 			"request": "launch",
 			"console": "integratedTerminal",
-			"args": [
-				"-m",
-				"pytest"
-			]
+			"module": "pytest"
 		},
 		{
 			"name": "Tests (Current File)",
 			"type": "python",
 			"request": "launch",
 			"console": "integratedTerminal",
+			"module": "pytest",
 			"args": [
-				"-m",
-				"pytest",
 				"${file}"
 			]
 		},
@@ -32,16 +28,16 @@
 			"program": "${workspaceFolder}/main.py",
 			"request": "launch",
 			"console": "integratedTerminal",
+			"args": [
+				"--firefox",
+			]
 		},
 		{
 			"name": "Submodule",
 			"type": "python",
 			"request": "launch",
 			"console": "integratedTerminal",
-			"args": [
-				"-m",
-				"price.userbenchmark"
-			]
+			"module": "price.userbenchmark"
 		},
 		{
 			"name": "Python: Current File",
