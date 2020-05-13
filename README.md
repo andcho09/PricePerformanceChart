@@ -111,7 +111,7 @@ This step can be skipped if the layer has not been modified and has already been
 
 ### 2) Update the Lambda code
 
-Note, the ``ant deploy`` target will do the first 3 steps for you (i.e. will create the change set).
+Note, the ``ant build deploy`` target will do the first 3 steps for you (i.e. will create the change set).
 
 1. Package CloudFormation template (i.e. upload code to S3) and copy template to S3 (note this is a Unix command)
 
@@ -143,6 +143,9 @@ Note, the ``ant deploy`` target will do the first 3 steps for you (i.e. will cre
 
 Run ``ant web``
 
+Don't upload through using the web console since it will remove the caching headers.
+
+
 ## Troubleshooting
 
 ### WebDriverException... Status code was: 127
@@ -166,6 +169,13 @@ If it says ``[SEVERE]: bind() failed: Cannot assign requested address (99)``, ru
 **Caused by:** Bad code.
 
 **Resolve by:** Surround code blocks with ``try finally`` blocks and call ``webdatasource.py#quit_selenium()`` method.
+
+### How to invoke the scraper after redeploying
+
+**Looks like:** You uploaded new code to Lambda, now you want to run it!
+
+**Resolve by:** In the Lambda console invoke the "Test" event which just submits: ``{"scrape": "value1"}``
+
 
 ## Thanks
 
