@@ -94,10 +94,10 @@
 	<target name="web" description="Uploads static web content to S3">
 		<property name="bucket" value="andrewcho-priceperformancechart-ap-southeast-2" />
 		<exec executable="aws" failonerror="true">
-			<arg line="s3 cp web/favicon.ico s3://${bucket}/priceperformancechart/data/ --cache-control max-age=31536000 --content-encoding gzip" />
+			<arg line="s3 cp web/favicon.ico s3://${bucket}/static/ --cache-control max-age=31536000 --content-encoding gzip" />
 		</exec>
 		<exec executable="aws" failonerror="true">
-			<arg line="s3 cp web s3://${bucket}/data/ --cache-control max-age=2592000 --recursive --exclude * --include chart.htm --include robots.txt" />
+			<arg line="s3 cp web s3://${bucket}/static/ --cache-control max-age=2592000 --recursive --exclude * --include chart.htm --include robots.txt" />
 		</exec>
 	</target>
 </project>

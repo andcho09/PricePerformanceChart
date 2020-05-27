@@ -22,6 +22,10 @@ Parameters:
     Type: String
     Description: Path prefix on where to save files in the S3 bucket (without trailing slash)
     Default: data
+  SnsTopicArn:
+    Type: String
+    Description: ARN of SNS topic to notify on errors
+    Default: arn:aws:sns:ap-southeast-2:214602658230:AlarmTopic-ap-southeast-2
   UploadDomEnabled:
     Type: String
     AllowedValues:
@@ -55,7 +59,9 @@ Resources:
             Effect: Allow
             Principal:
               AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}'
-            Resource: !Sub 'arn:aws:s3:::${S3Bucket}/*'
+            Resource:
+              - !Sub 'arn:aws:s3:::${S3Bucket}/${S3KeyPrefix}/*'
+              - !Sub 'arn:aws:s3:::${S3Bucket}/static/*'
   # IAM Role
   LambdaIamRole:
     Type: AWS::IAM::Role
@@ -93,7 +99,7 @@ Resources:
                   - 's3:GetObject'
                   - 's3:PutObject'
                 Resource:
-                  - !Sub 'arn:aws:s3:::${S3Bucket}/data/*'
+                  - !Sub 'arn:aws:s3:::${S3Bucket}/${S3KeyPrefix}/*'
                   - !Sub 'arn:aws:s3:::${S3Bucket}/tmp/*'
               - Effect: Allow
                 Action:
@@ -156,21 +162,36 @@ Resources:
         Aliases:
           - price.andrewcho.xyz
         Comment: Price Performance Chart
+        CacheBehaviors:
+          - ForwardedValues:
+              QueryString: false
+            PathPattern: !Sub '*.js*'
+            TargetOriginId: S3-PricePerformanceChartData
+            ViewerProtocolPolicy: redirect-to-https
+            Compress: true
+            DefaultTTL: 2592000 # 30 days
+            MaxTTL: 31536000 # 365 days
+            MinTTL: 3600 # 1 hour
         DefaultCacheBehavior:
           ForwardedValues:
             QueryString: false
-          TargetOriginId: S3-PricePerformanceChart
+          TargetOriginId: S3-PricePerformanceChartStatic
           ViewerProtocolPolicy: redirect-to-https
           Compress: true
           DefaultTTL: 2592000 # 30 days
           MaxTTL: 31536000 # 365 days
-          MinTTL: 3600 # 1 hour
+          MinTTL: 2592000 # 30 days
         DefaultRootObject: chart.htm
         HttpVersion: http2
         Origins:
           - DomainName: !GetAtt S3Bucket.DomainName
-            Id: S3-PricePerformanceChart
+            Id: S3-PricePerformanceChartData
             OriginPath: !Sub '/${S3KeyPrefix}'
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+          - DomainName: !GetAtt S3Bucket.DomainName
+            Id: S3-PricePerformanceChartStatic
+            OriginPath: !Sub '/static'
             S3OriginConfig:
               OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
         PriceClass: PriceClass_All
@@ -192,7 +213,7 @@ Resources:
     Properties:
       Description: Trigger PricePerformanceChart scrape
       Name: TriggerPricePerformanceChartScrape
-      ScheduleExpression: cron(47 0 ? * TUE *) # Every Tuesday at 00:47 UTC (13:47 NZDT)
+      ScheduleExpression: cron(47 0 * * ? *) # Everyday at 00:47 UTC (13:47 NZDT)
       State: ENABLED
       Targets:
         - Arn: !GetAtt LambdaFunction.Arn
@@ -206,3 +227,24 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: events.amazonaws.com
       SourceArn: !GetAtt EventRule.Arn
+  # CloudWatch Alarms
+  AlarmError:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 1
+      # Optionals
+      AlarmActions:
+        - !Ref SnsTopicArn
+      AlarmDescription: !Sub '${LambdaFunction} Lambda function errors'
+      AlarmName: !Sub '${LambdaFunction} Errors'
+      DatapointsToAlarm: 1
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref LambdaFunction
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: 86400 # 1 day
+      Statistic: Sum
+      Threshold: 1
+      TreatMissingData: breaching

@@ -81,9 +81,6 @@ Note, this runs all of the tests, including the ones that invoke Selenium with a
 
 		$ py -m pytest -m "not slow"
 
-
-**TODO**: these tests currently do not invoke doesn't Selenium/browser
-
 ### Updating Python dependencies
 
 1. In a VirtualEnv environment...
