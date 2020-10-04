@@ -97,9 +97,16 @@ lambda_handler = LambdaHandler()
 
 def handler(event, context):
 	if 'driver' in event:
+		# Print temp directory
 		#for root, dirs, files in os.walk('/tmp/aws/'):
 		#	print('root: ' + str(root) + ', dirs: ' + str(dirs) + ', files: ' + str(files))
-		print(str(os.system('/opt/chromedriver/chromedriver')))
+		
+		# Launch Chrome driver
+		#print(str(os.system('/opt/chromedriver/chromedriver')))
+
+		# Print Chrome browser verison
+		driver = price.webdriver.ChromeWebDriver('/opt/chromium/chromium', '/opt/chromedriver/chromedriver', '/tmp/chromedriver.log').getWebDriver()
+		print(f'Chrome browser version: {driver.capabilities["browserVersion"]}')
 	elif 'scrape' in event:
 		lambda_handler.scrape(event, context, price.scraper.Type.CPU)
 		lambda_handler.scrape(event, context, price.scraper.Type.HDD)

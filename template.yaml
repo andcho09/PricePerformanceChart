@@ -128,7 +128,7 @@ Resources:
           UPLOAD_DOM: !Ref UploadDomEnabled
       FunctionName: PricePerformanceChartScraper
       Layers:
-        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:selenium_chromium:4
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:selenium_chromium:5
       MemorySize: 3008 # Max memory :D
       Role: !GetAtt LambdaIamRole.Arn
       Tags:

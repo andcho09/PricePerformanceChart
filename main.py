@@ -25,6 +25,7 @@ if __name__ == '__main__': # this hack prevents this code from being run during 
   m   parse HTML, munge data, and write locally to 'web' directory
   u   upload latest JSON data file from local 'web' directory into S3"""
 	parser = argparse.ArgumentParser(description='Welcome to the Price Performance Chart!', formatter_class=argparse.RawTextHelpFormatter, epilog=epilog)
+	parser.add_argument('-v', '--version', action='store_true', help="show browser versions")
 	_add_browser_opts(parser) # Add options here so it shows on the main (no product 'type' subcommand) help
 	subparsers = parser.add_subparsers(title='product types to operate on', dest='type')
 	for product_type in ['cpu', 'hdd']:
@@ -33,7 +34,17 @@ if __name__ == '__main__': # this hack prevents this code from being run during 
 		subparser.add_argument('action', choices=['d', 'm', 'u'], help='Action to take', nargs ='?')
 	args = parser.parse_args()
 	if not hasattr(args, 'action'):
-		setattr(args, 'action', None) # Hack to make prompt behaviour below easier to set args.action
+		setattr(args, 'action', None) # Hack args.action = None to make prompt behaviour below easier
+
+	if args.version:
+		results = []
+		driver = price.webdriver.ChromeWebDriver(temp_dir=os.path.abspath('build')).getWebDriver()
+		results.append(('Chrome', driver.capabilities["browserVersion"]))
+		driver = price.webdriver.FirefoxWebDriver('Selenium').getWebDriver()
+		results.append(('Firefox', driver.capabilities["browserVersion"]))
+		for result in results:
+			print(f'{result[0]} browser version: {result[1]}')
+		sys.exit(0)
 
 	# Preserve old behaviour of prompting which makes debugging nice
 	if args.type is None:

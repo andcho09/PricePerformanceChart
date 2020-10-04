@@ -3,20 +3,20 @@ import price.webdatasource
 import price.webdriver
 import requests
 
-"""PriceSpy's most popular CPUs with 2GHz+ and 4+ cores"""
+"""PriceSpy's most popular CPUs with 2GHz+ and 4+ cores <= $1000"""
 class PriceSpy(price.webdatasource.WebDataSource):
 
 	def download(self, output_file_name_prefix, num_pages=1):
 		self.files_downloaded = []
 		for i in range(num_pages):
 			url_offset = '' if i == 0 else '&offset=' + str(24 * i)
-			src = self._download('https://pricespy.co.nz/category.php?k=s331848943&catId=500' + url_offset, 'Find the best deals on CPUs - Compare prices on PriceSpy NZ', 'div[data-test="ProductCard"]', 'body')
+			src = self._download('https://pricespy.co.nz/category.php?k=s334663499&catId=500' + url_offset, 'Find the best deals on CPUs - Compare prices on PriceSpy NZ', 'div[data-test="ProductCard"]', 'body')
 			file_name = output_file_name_prefix + '_' + str(i + 1) + '.htm'
 			with open(file_name, 'w', encoding='utf-8') as f:
 				f.write(src)
 			self.files_downloaded.append(file_name)
 		return self.files_downloaded
-		# page 2: https://pricespy.co.nz/category.php?k=s331848943&catId=500&offset=24
+		# page 2: https://pricespy.co.nz/category.php?k=s334663499&catId=500&offset=24
 
 	"""
 	Parses PriceSpy data file(s) adding  dictionary objects {'name': <name>, 'price': <e.g. $1,000>'} to result list
