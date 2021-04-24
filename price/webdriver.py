@@ -144,4 +144,4 @@ class ChromeWebDriver(WebDriver):
 		options.add_argument('--use-mock-keychain')
 		options.add_argument('--memory-pressure-off')
 
-		return selenium.webdriver.Chrome(self.chromedriver_path, service_log_path=self.chromedriver_log_file, chrome_options=options)
+		return selenium.webdriver.Chrome(self.chromedriver_path, options=options, service_log_path=self.chromedriver_log_file)

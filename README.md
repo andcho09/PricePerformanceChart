@@ -84,7 +84,7 @@ Note, this runs all of the tests, including the ones that invoke Selenium with a
 ### Updating Python dependencies
 
 1. In a VirtualEnv environment...
-1. Update whatever dependencies (i.e. ``pip install -U <dependency>``) and retest
+1. Update whatever dependencies (i.e. ``pip install -U <dependency>`` or use (pip-upgrader)[https://pypi.org/project/pip-upgrader/]) and retest
 1. Freeze dependencies
 
 	```
@@ -173,14 +173,14 @@ If it says ``[SEVERE]: bind() failed: Cannot assign requested address (99)``, ru
 
 **Resolve by:** In the Lambda console invoke the "Test" event which just submits: ``{"scrape": "value1"}``
 
-
-## Thanks
-
-Lambda implementation based on https://github.com/alixaxel/chrome-aws-lambda but ported to Python.
-
 ### HTML DOM source is different between browsers
 
 Various reasons:
 
 * Responsive websites may change their content based on the size of the view port. For Chrome this is set as a launch option but is not set for Firefox.
 * Browser extensions and add-ons. The Firefox profile runs with a 'Selenium' profile with no extensions on Desktop since my default profile has NoScript installed and will likely break many sites
+
+
+## Thanks
+
+Lambda implementation based on https://github.com/alixaxel/chrome-aws-lambda but ported to Python.
