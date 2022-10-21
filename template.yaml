@@ -6,7 +6,7 @@ Parameters:
   CloudFrontCertificateArn:
     Type: String
     Description: ARN of ACM certificate to deploy into CloudFront. Has to be from us-east-1 because CloudFront is naff.
-    Default: arn:aws:acm:us-east-1:214602658230:certificate/f0a5f0cf-a2b8-4184-a258-a44018a2a4d0
+    Default: arn:aws:acm:us-east-1:123456789012:certificate/f0a5f0cf-a2b8-4184-a258-a44018a2a4d0
   DebugEnabled:
     Type: String
     AllowedValues:
@@ -25,7 +25,7 @@ Parameters:
   SnsTopicArn:
     Type: String
     Description: ARN of SNS topic to notify on errors
-    Default: arn:aws:sns:ap-southeast-2:214602658230:AlarmTopic-ap-southeast-2
+    Default: arn:aws:sns:ap-southeast-2:123456789012:AlarmTopic-ap-southeast-2
   UploadDomEnabled:
     Type: String
     AllowedValues:

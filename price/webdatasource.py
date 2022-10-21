@@ -3,6 +3,7 @@ import bs4
 import price.helper
 import os
 import selenium.webdriver.support.wait
+from selenium.webdriver.common.by import By
 
 logger = price.helper.get_logger(__name__)
 
@@ -46,8 +47,8 @@ class WebDataSource(metaclass=abc.ABCMeta):
 			self.driver.get(url)
 			assert page_title in self.driver.title
 			self._pre_wait_navigation(self.driver)
-			selenium.webdriver.support.wait.WebDriverWait(self.driver, 10).until(lambda x: x.find_element_by_css_selector(wait_until_css_selector))
-			elem = self.driver.find_element_by_tag_name(tag)
+			selenium.webdriver.support.wait.WebDriverWait(self.driver, 10).until(lambda x: x.find_element(By.CSS_SELECTOR, wait_until_css_selector))
+			elem = self.driver.find_element(By.TAG_NAME, tag)
 			result = elem.get_attribute('outerHTML')
 			self._post_download(self.driver)
 		finally:

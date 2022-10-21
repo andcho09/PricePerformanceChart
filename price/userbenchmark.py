@@ -91,36 +91,36 @@ class UserBenchmark(price.webdatasource.WebDataSource):
 		chooser_ele = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 's2id_mh-td-chooser')))
 		chooser_ele.click()
 		# Click 3rd option (sort by fatest average effective speed)
-		option = WebDriverWait(driver, 2).until(lambda x: x.find_element_by_xpath('(//span[@class="select2-match"])[3]'))
-		clickable_option = option.find_element_by_xpath('./..')
+		option = WebDriverWait(driver, 2).until(lambda x: x.find_element(By.XPATH, '(//span[@class="select2-match"])[3]'))
+		clickable_option = option.find_element(By.XPATH, './..')
 		clickable_option.click()
 		time.sleep(1.5) # This is gross but it's possible on Lambda for the progress bar to not have even shown up yet if this is too low
 		# Wait until progress bar gone
-		WebDriverWait(driver, 5).until_not(lambda x: x.find_element_by_css_selector('div[class="ajaxProgress"]').is_displayed())
+		WebDriverWait(driver, 5).until_not(lambda x: x.find_element(By.CSS_SELECTOR, 'div[class="ajaxProgress"]').is_displayed())
 
-		if len(driver.find_elements_by_css_selector('th.mh-td-col[data-mhth="MCCPU_1CA"]')) == 0:
+		if len(driver.find_elements(By.CSS_SELECTOR, 'th.mh-td-col[data-mhth="MCCPU_1CA"]')) == 0:
 			# Add 1-core pts if not there
-			add_column_links = driver.find_elements_by_css_selector('th.mh-td-th-arrow[title="Add columns"] a.nodec')
+			add_column_links = driver.find_elements(By.CSS_SELECTOR, 'th.mh-td-th-arrow[title="Add columns"] a.nodec')
 			add_column_links[-1].click() # Click the last one, that should be the link to open the options panel (instead of the hidden one)
 			column_dialog = WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.list-group')))
-			options = column_dialog.find_elements_by_tag_name('a')
+			options = column_dialog.find_elements(By.TAG_NAME, 'a')
 			for option in options:
 				if option.text.find('1-Core') >= 0:
 					option.click()
 					time.sleep(1.5) # This is gross but it's possible on Lambda for the progress bar to not have even shown up yet if this is too low
 					# Wait until progress bar gone
-					WebDriverWait(driver, 5).until_not(lambda x: x.find_element_by_css_selector('div[class="ajaxProgress"]').is_displayed())
+					WebDriverWait(driver, 5).until_not(lambda x: x.find_element(By.CSS_SELECTOR, 'div[class="ajaxProgress"]').is_displayed())
 					break
 
 	def _post_download(self, driver):
 		for i in range(1, self.num_pages):
-			next = driver.find_element_by_xpath('//ul[@class="pagination pagination-lg"]/li[2]/a') # Next page
+			next = driver.find_element(By.XPATH, '//ul[@class="pagination pagination-lg"]/li[2]/a') # Next page
 			driver.execute_script('arguments[0].scrollIntoView(false);', next)
 			next.click()
 			time.sleep(1.5) # This is gross but it's possible on Lambda for the progress bar to not have even shown up yet if this is too low
 			# Wait until progress bar gone
-			WebDriverWait(driver, 5).until_not(lambda x: x.find_element_by_css_selector('div[class="ajaxProgress"]').is_displayed())
-			body = driver.find_element_by_tag_name('body')
+			WebDriverWait(driver, 5).until_not(lambda x: x.find_element(By.CSS_SELECTOR, 'div[class="ajaxProgress"]').is_displayed())
+			body = driver.find_element(By.TAG_NAME, 'body')
 			file_name = self.output_file_name_prefix + '_' + str(i + 1) + '.htm'
 			with open(file_name, 'w', encoding='utf-8') as f:
 				f.write(body.get_attribute('outerHTML'))
