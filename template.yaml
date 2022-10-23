@@ -116,7 +116,7 @@ Resources:
     Properties:
       CodeUri: build/lambda_scraper.zip # Relative to location of this CloudFormation template
       Handler: lambda.handler
-      Runtime: python3.8
+      Runtime: python3.9
       # Optional properties
       Description: Lambda function for scraping web sites
       Environment:
@@ -128,7 +128,7 @@ Resources:
           UPLOAD_DOM: !Ref UploadDomEnabled
       FunctionName: PricePerformanceChartScraper
       Layers:
-        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:selenium_chromium:7
+        - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:selenium_chromium:9
       MemorySize: 3008 # Max memory :D
       Role: !GetAtt LambdaIamRole.Arn
       Tags:

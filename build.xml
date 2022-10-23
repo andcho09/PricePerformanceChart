@@ -14,7 +14,7 @@
 				<include name="botocore/**" />-->
 				<include name="bs4/**" />
 				<include name="certifi/**" />
-				<include name="chardet/**" />
+				<include name="charset_normalizer/**" />
 				<include name="idna/**" />
 				<include name="requests/**" />
 				<include name="selenium/**" />
