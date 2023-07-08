@@ -84,7 +84,7 @@ Note, this runs all of the tests, including the ones that invoke Selenium with a
 ### Updating Python dependencies
 
 1. In a VirtualEnv environment...
-1. Update whatever dependencies using (pip-upgrader)[https://pypi.org/project/pip-upgrader/]) and retest
+1. Update whatever dependencies using [pip-upgrader](https://pypi.org/project/pip-upgrader/) and retest
 1. Freeze dependencies
 
 	```
