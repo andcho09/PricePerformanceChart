@@ -51,7 +51,7 @@ This section assumes ``venv`` is being used
 1. Activate venv environment
 
 	```
-	$ .venv\Scripts\activate
+	$ source .venv\Scripts\activate
 	```
 
 1. Install pip modules
@@ -75,11 +75,11 @@ Note, this runs all of the tests, including the ones that invoke Selenium with a
 
 * browser tests only (slow):
 
-		$ py -m pytest -m "slow"
+		$ python -m pytest -m "slow"
 
 * non-browser (fast):
 
-		$ py -m pytest -m "not slow"
+		$ python -m pytest -m "not slow"
 
 ### Updating Python dependencies
 

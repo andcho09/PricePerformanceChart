@@ -3,12 +3,19 @@
 	<target name="build">
 		<mkdir dir="build" />
 		<delete failonerror="false" file="build/lambda_scraper.zip" />
+
+		<!-- Figure out where site-packages dir is -->
+		<path id="site-packages">
+			<dirset dir="${basedir}/.venv/lib" includes="*/site-packages" />
+		</path>
+		<echo>Including site-packages dir ${toString:site-packages}</echo>
+
 		<zip destfile="build/lambda_scraper.zip">
 			<zipfileset dir="${basedir}">
 				<include name="price/**" />
 				<include name="lambda.py" />
 			</zipfileset>
-			<zipfileset dir="${basedir}/.venv/Lib/site-packages">
+			<zipfileset dir="${toString:site-packages}">
 				<!-- These are already included by AWS. Could include to lock down versions-->
 				<!--<include name="boto3/**" />
 				<include name="botocore/**" />-->

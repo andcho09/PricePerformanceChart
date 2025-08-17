@@ -116,8 +116,10 @@ Resources:
     Properties:
       CodeUri: build/lambda_scraper.zip # Relative to location of this CloudFormation template
       Handler: lambda.handler
-      Runtime: python3.9
+      Runtime: python3.13
       # Optional properties
+      Architectures:
+        - arm64
       Description: Lambda function for scraping web sites
       Environment:
         Variables:
